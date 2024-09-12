@@ -1,15 +1,22 @@
-/*
- * File:   XArrayList.h
- */
-
-#ifndef XARRAYLIST_H
-#define XARRAYLIST_H
-#include "list/IList.h"
-#include <memory.h>
-#include <sstream>
 #include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <memory.h>
 #include <type_traits>
+
 using namespace std;
+
+template<class T>
+class IList{
+public:
+    virtual ~IList(){};
+    virtual void    add(T e)=0;
+    virtual void    add(int index, T e)=0;
+    virtual bool    empty()=0;
+    virtual int     size()=0;
+    virtual int     indexOf(T item)=0;
+};
 
 template <class T>
 class XArrayList : public IList<T>
@@ -29,22 +36,14 @@ public:
         void (*deleteUserData)(XArrayList<T> *) = 0,
         bool (*itemEqual)(T &, T &) = 0,
         int capacity = 10);
-    XArrayList(const XArrayList<T> &list);
-    XArrayList<T> &operator=(const XArrayList<T> &list);
     ~XArrayList();
 
     // Inherit from IList: BEGIN
     void add(T e);
     void add(int index, T e);
-    T removeAt(int index);
-    bool removeItem(T item, void (*removeItemData)(T) = 0);
     bool empty();
     int size();
-    void clear();
-    T &get(int index);
     int indexOf(T item);
-    bool contains(T item);
-    string toString(string (*item2str)(T &) = 0);
     // Inherit from IList: BEGIN
 
     void println(string (*item2str)(T &) = 0)
@@ -112,9 +111,9 @@ protected:
             return itemEqual(lhs, rhs);
     }
 
-    void copyFrom(const XArrayList<T> &list);
+    // void copyFrom(const XArrayList<T> &list);
 
-    void removeInternalData();
+    // void removeInternalData();
 
     //////////////////////////////////////////////////////////////////////
     ////////////////////////  INNER CLASSES DEFNITION ////////////////////
@@ -183,45 +182,13 @@ XArrayList<T>::XArrayList(
     int capacity)
 {
     // TODO
+    this->data = new T[capacity];
     this->deleteUserData = deleteUserData;
     this->itemEqual = itemEqual;
     this->capacity = capacity;
     this->count = 0;
 }
 
-template <class T>
-void XArrayList<T>::copyFrom(const XArrayList<T> &list)
-{
-    /*
-     * Copies the contents of another XArrayList into this list.
-     * Initializes the list with the same capacity as the source list and copies all elements.
-     * Also duplicates user-defined comparison and deletion functions, if applicable.
-     */
-    // TODO
-}
-
-template <class T>
-void XArrayList<T>::removeInternalData()
-{
-    /*
-     * Clears the internal data of the list by deleting the dynamic array and any user-defined data.
-     * If a custom deletion function is provided, it is used to free the stored elements.
-     * Finally, the dynamic array itself is deallocated from memory.
-     */
-    // TODO
-}
-
-template <class T>
-XArrayList<T>::XArrayList(const XArrayList<T> &list)
-{
-    // TODO
-}
-
-template <class T>
-XArrayList<T> &XArrayList<T>::operator=(const XArrayList<T> &list)
-{
-    // TODO
-}
 
 template <class T>
 XArrayList<T>::~XArrayList()
@@ -235,6 +202,8 @@ template <class T>
 void XArrayList<T>::add(T e)
 {
     // TODO
+    ensureCapacity(count);
+    data[count++] = e;
 }
 
 template <class T>
@@ -243,66 +212,29 @@ void XArrayList<T>::add(int index, T e)
     // TODO
 }
 
-template <class T>
-T XArrayList<T>::removeAt(int index)
-{
-    // TODO
-}
-
-template <class T>
-bool XArrayList<T>::removeItem(T item, void (*removeItemData)(T))
-{
-    // TODO
-}
 
 template <class T>
 bool XArrayList<T>::empty()
 {
     // TODO
+    return this->count == 0;    
 }
 
 template <class T>
 int XArrayList<T>::size()
 {
-    // TODO
-}
-
-template <class T>
-void XArrayList<T>::clear()
-{
-    // TODO
-}
-
-template <class T>
-T &XArrayList<T>::get(int index)
-{
-    // TODO
+    // 
+    return this->count;
 }
 
 template <class T>
 int XArrayList<T>::indexOf(T item)
 {
     // TODO
-}
-template <class T>
-bool XArrayList<T>::contains(T item)
-{
-    // TODO
-}
-
-template <class T>
-string XArrayList<T>::toString(string (*item2str)(T &))
-{
-    /**
-     * Converts the array list into a string representation, formatting each element using a user-defined function.
-     * If no function is provided, it uses the default string representation for each element.
-     * Example: Given an array list with elements {1, 2, 3} and a function that converts integers to strings, calling toString would return "[1, 2, 3]".
-     *
-     * @param item2str A function pointer for converting items of type T to strings. If null, default to the string conversion of T.
-     * @return A string representation of the array list with elements separated by commas and enclosed in square brackets.
-     */
-
-    // TODO
+    for (int i = 0; i < count; i++)
+        if (equals(data[i], item, itemEqual))
+            return i;
+    return -1;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -317,6 +249,9 @@ void XArrayList<T>::checkIndex(int index)
      * Ensures safe access to the list's elements by preventing invalid index operations.
      */
     // TODO
+    if (index < 0 || index > count) {
+        throw std::out_of_range("Index out of range");
+    }
 }
 template <class T>
 void XArrayList<T>::ensureCapacity(int index)
@@ -328,6 +263,37 @@ void XArrayList<T>::ensureCapacity(int index)
      * In case of memory allocation failure, catches std::bad_alloc.
      */
     // TODO
+    checkIndex(index);
+    try {
+        if (index >= capacity) {
+            capacity = index*2;
+            T *newData = new T[capacity];
+            memcpy(newData, data, count * sizeof(T));
+            delete[] data;
+            data = newData;
+        }
+    } catch (std::bad_alloc& ba) {
+        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
 }
 
-#endif /* XARRAYLIST_H */
+void xlistDemo1(){
+    XArrayList<int> iList;
+    for(int i = 0; i< 10 ; i++)
+        iList.add(i*i);
+    
+    //iList.dump();
+    for(XArrayList<int>::Iterator it=iList.begin(); it != iList.end(); it++ )
+        cout << *it << ", found at: " << iList.indexOf(*it) << endl;
+    cout << endl;
+    int item = 120;
+    int foundIdx = iList.indexOf(item);
+    cout    << "lookup for " << item  << " found at: " << foundIdx << endl;
+}
+
+int main(int argc, char** argv) {
+    xlistDemo1();
+    cout << endl;
+    cout << "Assignment-1" << endl;
+    return 0;
+}
