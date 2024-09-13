@@ -7,7 +7,17 @@
 g++ -Iinclude -Isrc -std=c++17 assignment1.cpp -o assignment1
 
 #check leak mem
-valgrind --leak-check=full ./assignment1
+
+echo "-------------------------------------------"
+echo "------------CHECK LEAK MEM-----------------"
+echo "-------------------------------------------"
+echo ""
+valgrind --track-origins=no  --leak-check=summary ./assignment1 > /dev/null
 
 #run program
+echo ""
+echo "-------------------------------------------"
+echo "-------------RUN PROGRAM-------------------"
+echo "-------------------------------------------"
+echo ""
 ./assignment1

@@ -65,7 +65,8 @@
     "string_view": "cpp",
     "initializer_list": "cpp",
     "new": "cpp",
-    "ostream": "cpp"
+    "ostream": "cpp",
+    "span": "cpp"
   },
   "C_Cpp_Runner.msvcSecureNoWarnings": false
 }

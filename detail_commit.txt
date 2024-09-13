@@ -1,3 +1,8 @@
 Time        Date            Modified
-10:15       13/9/2024       assignment1.cpp: Implement add, remove, clear, get, contain, toString
+23:00       12/9/2024       assignment1.cpp: Implement add, size, empty, constructor, destructor, indexOf, checkIndex, ensureCap
+                            Create run.sh
+10:15       13/9/2024       assignment1.cpp: Implement remove, clear, get, contain, toString
                             Modified run.sh
+22:30       13/9/2024       assignment1.cpp: Implement copy constructor, overload operator = 
+                            Modified run.sh for clearly message
+                            Create files:  code.txt - store old code, testcase.h - store prototype of testcase and helper func
