@@ -4,6 +4,7 @@
 #include <string>
 #include <memory.h>
 #include <type_traits>
+#include "util/Point.h"
 
 using namespace std;
 
@@ -36,14 +37,22 @@ public:
         void (*deleteUserData)(XArrayList<T> *) = 0,
         bool (*itemEqual)(T &, T &) = 0,
         int capacity = 10);
+    XArrayList(const XArrayList<T> &list);
+    XArrayList<T> &operator=(const XArrayList<T> &list);
     ~XArrayList();
 
     // Inherit from IList: BEGIN
     void add(T e);
     void add(int index, T e);
+    T removeAt(int index);
+    bool removeItem(T item, void (*removeItemData)(T) = 0);
     bool empty();
     int size();
+    void clear();
+    T &get(int index);
     int indexOf(T item);
+    bool contains(T item);
+    string toString(string (*item2str)(T &) = 0);
     // Inherit from IList: BEGIN
 
     void println(string (*item2str)(T &) = 0)
@@ -182,26 +191,58 @@ XArrayList<T>::XArrayList(
     int capacity)
 {
     // TODO
-    this->data = new T[capacity];
     this->deleteUserData = deleteUserData;
     this->itemEqual = itemEqual;
     this->capacity = capacity;
     this->count = 0;
+    this->data = new T[capacity];
+}
+// template <class T>
+// void XArrayList<T>::copyFrom(const XArrayList<T> &list)
+// {
+//     /*
+//      * Copies the contents of another XArrayList into this list.
+//      * Initializes the list with the same capacity as the source list and copies all elements.
+//      * Also duplicates user-defined comparison and deletion functions, if applicable.
+//      */
+//     // TODO
+// }
+
+// template <class T>
+// void XArrayList<T>::removeInternalData()
+// {
+//     /*
+//      * Clears the internal data of the list by deleting the dynamic array and any user-defined data.
+//      * If a custom deletion function is provided, it is used to free the stored elements.
+//      * Finally, the dynamic array itself is deallocated from memory.
+//      */
+//     // TODO
+// }
+
+template <class T>
+XArrayList<T>::XArrayList(const XArrayList<T> &list)
+{
+    // TODO
+}
+
+template <class T>
+XArrayList<T> &XArrayList<T>::operator=(const XArrayList<T> &list)
+{
+    // TODO
 }
 
 
 template <class T>
 XArrayList<T>::~XArrayList()
 {
-    // TODO
     if(deleteUserData != 0)
         deleteUserData(this);
+    if(data) delete[] data;
 }
 
 template <class T>
 void XArrayList<T>::add(T e)
 {
-    // TODO
     ensureCapacity(count);
     data[count++] = e;
 }
@@ -209,33 +250,117 @@ void XArrayList<T>::add(T e)
 template <class T>
 void XArrayList<T>::add(int index, T e)
 {
-    // TODO
+    ensureCapacity(index);
+    for(int i = count; i > index; i--)
+        data[i] = data[i-1];
+    data[index] = e;
+    count++;
 }
 
 
 template <class T>
+T XArrayList<T>::removeAt(int index)
+{
+    if(index < 0 || index >= count)
+        throw std::out_of_range("Index out of range");
+    else{
+        T item = data[index];
+        for(int i = index; i < count-1; i++)
+            data[i] = data[i+1];
+        count--;
+        return item;
+    }
+    return nullptr;
+}
+
+template <class T>
+bool XArrayList<T>::removeItem(T item, void (*removeItemData)(T))
+{
+    for (int i = 0; i < count; i++){
+        if (itemEqual ? itemEqual(data[i], item) : data[i] == item){
+            if (removeItemData){
+                removeItemData(data[i]);
+            }
+            for (int j = i; j < count - 1; j++){
+                data[j] = data[j + 1];
+            }
+            count--;
+            return true;
+        }
+    }
+    return false;
+}
+
+template <class T>
 bool XArrayList<T>::empty()
 {
-    // TODO
     return this->count == 0;    
 }
 
 template <class T>
 int XArrayList<T>::size()
 {
-    // 
     return this->count;
+}
+
+template <class T>
+void XArrayList<T>::clear()
+{
+    if(data) delete[] data;
+    count = 0;
+    capacity = 10;
+    data = new T[capacity];
+}
+
+template <class T>
+T &XArrayList<T>::get(int index)
+{
+    checkIndex(index);
+    return data[index];
 }
 
 template <class T>
 int XArrayList<T>::indexOf(T item)
 {
-    // TODO
     for (int i = 0; i < count; i++)
         if (equals(data[i], item, itemEqual))
             return i;
     return -1;
 }
+
+template <class T>
+bool XArrayList<T>::contains(T item)
+{
+    return indexOf(item) != -1;
+}
+
+template <class T>
+string XArrayList<T>::toString(string (*item2str)(T &))
+{
+    /**
+     * Converts the array list into a string representation, formatting each element using a user-defined function.
+     * If no function is provided, it uses the default string representation for each element.
+     * Example: Given an array list with elements {1, 2, 3} and a function that converts integers to strings, calling toString would return "[1, 2, 3]".
+     *
+     * @param item2str A function pointer for converting items of type T to strings. If null, default to the string conversion of T.
+     * @return A string representation of the array list with elements separated by commas and enclosed in square brackets.
+     */
+
+    string result = "[";
+    for (int i = 0; i < count; i++){
+        if (item2str){
+            result += item2str(data[i]);
+        } else {
+            stringstream ss;
+            ss << data[i];
+            result += ss.str();
+        }
+        if (i < count - 1) result += ", ";
+    }
+    result += "]"; 
+    return result;
+}
+
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////// (private) METHOD DEFNITION //////////////////
@@ -290,10 +415,44 @@ void xlistDemo1(){
     int foundIdx = iList.indexOf(item);
     cout    << "lookup for " << item  << " found at: " << foundIdx << endl;
 }
-
-int main(int argc, char** argv) {
-    xlistDemo1();
+void xlistDemo4(){
+    XArrayList<Point*> list1(&XArrayList<Point*>::free, &Point::pointEQ);
+    list1.add(new Point(23.2f, 25.4f));
+    list1.add(new Point(24.6f, 23.1f));  
+    list1.add(new Point(12.5f, 22.3f)); 
+    
+    for(XArrayList<Point*>::Iterator it = list1.begin(); it != list1.end(); it++)
+        cout << **it << endl;
+    
+    Point* p1 = new Point(24.6f, 23.1f); //found in list
+    Point* p2 = new Point(124.6f, 23.1f); //not found
+    cout << *p1 << "=> " << (list1.contains(p1)? "found; " : "not found; ")
+                << " indexOf returns: " << list1.indexOf(p1) << endl;
+    cout << *p2 << "=> " << (list1.contains(p2)? "found; " : "not found; ")
+                << " indexOf returns: " << list1.indexOf(p2) << endl;
+    
+    ///Different results if not pass &Point::equals
+    cout << endl << endl;
+    XArrayList<Point*> list2(&XArrayList<Point*>::free);
+    list2.add(new Point(23.2f, 25.4f));
+    list2.add(new Point(24.6f, 23.1f));  
+    list2.add(new Point(12.5f, 22.3f)); 
+    
+    for(XArrayList<Point*>::Iterator it = list2.begin(); it != list2.end(); it++)
+        cout << **it << endl;
+    
+    cout << *p1 << "=> " << (list2.contains(p1)? "found; " : "not found; ")
+                << " indexOf returns: " << list2.indexOf(p1) << endl;
+    cout << *p2 << "=> " << (list2.contains(p2)? "found; " : "not found; ")
+                << " indexOf returns: " << list2.indexOf(p2) << endl;
     cout << endl;
+    
+    list1.toString(Point::point2str);
+    delete p1; delete p2;
+}
+int main(int argc, char** argv) {
+    // xlistDemo1();
+    xlistDemo4();
     cout << "Assignment-1" << endl;
     return 0;
 }

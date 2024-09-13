@@ -1,29 +1,13 @@
 #!/bin/bash
 
-# Đường dẫn tới trình biên dịch C++
-CXX=g++
+# build main.cpp
+# g++ -Iinclude -Isrc -std=c++17 main.cpp -o program
+# ./program
 
-# Cờ biên dịch
-CXXFLAGS="-Iinclude -Isrc -std=c++17"
+g++ -Iinclude -Isrc -std=c++17 assignment1.cpp -o assignment1
 
-# Tên file nguồn
-SRC="main.cpp"
+#check leak mem
+valgrind --leak-check=full ./assignment1
 
-# Tên file thực thi đầu ra
-OUT="program"
-
-# Biên dịch chương trình
-$CXX $CXXFLAGS $SRC -o $OUT
-
-# # Kiểm tra xem biên dịch có thành công không
-# if [ $? -eq 0 ]; then
-#     echo "Compile successfully! Running the program..."
-    
-#     # Chạy chương trình thực thi
-#     #./$OUT
-    
-#     # Thông báo chương trình đã chạy xong
-#     echo "Run successfully!"
-# else
-#     echo "Compile failed!"
-# fi
+#run program
+./assignment1
