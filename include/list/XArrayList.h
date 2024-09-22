@@ -187,6 +187,7 @@ XArrayList<T>::XArrayList(
     this->itemEqual = itemEqual;
     this->capacity = capacity;
     this->count = 0;
+    this->data = new T[capacity];
 }
 
 template <class T>
@@ -215,12 +216,48 @@ template <class T>
 XArrayList<T>::XArrayList(const XArrayList<T> &list)
 {
     // TODO
+    deleteUserData = list.deleteUserData;
+    itemEqual = list.itemEqual;
+    capacity = list.capacity;
+    count = list.count;
+
+    data = new T[capacity];
+    
+    for (int i = 0; i < count; i++){
+        if constexpr (std::is_pointer<T>::value) {
+            data[i] = new std::remove_pointer_t<T>(*(list.data[i]));
+        } else {
+            data[i] = list.data[i];
+        }
+    }
 }
 
 template <class T>
 XArrayList<T> &XArrayList<T>::operator=(const XArrayList<T> &list)
 {
     // TODO
+    if (this == &list)
+        return *this; 
+
+    if(deleteUserData != 0)
+        deleteUserData(this);
+
+    if(data)
+        delete[] data;
+
+    count = list.count;
+    capacity = list.capacity;
+    data = new T[capacity];
+
+    for (int i = 0; i < count; i++){
+        if constexpr (std::is_pointer<T>::value) {
+            data[i] = new std::remove_pointer_t<T>(*(list.data[i]));
+        } else {
+            data[i] = list.data[i];
+        }
+    }
+
+    return *this;
 }
 
 template <class T>
@@ -229,65 +266,105 @@ XArrayList<T>::~XArrayList()
     // TODO
     if(deleteUserData != 0)
         deleteUserData(this);
+    if(data) delete[] data;
 }
 
 template <class T>
 void XArrayList<T>::add(T e)
 {
     // TODO
+    ensureCapacity(count);
+    data[count++] = e;
 }
 
 template <class T>
 void XArrayList<T>::add(int index, T e)
 {
     // TODO
+    ensureCapacity(index);
+    for(int i = count; i > index; i--)
+        data[i] = data[i-1];
+    data[index] = e;
+    count++;
 }
 
 template <class T>
 T XArrayList<T>::removeAt(int index)
 {
     // TODO
+    if(index < 0 || index >= count)
+        throw std::out_of_range("Index out of range");
+    T item = data[index];
+    for(int i = index; i < count-1; i++)
+        data[i] = data[i+1];
+    count--;
+    return item;
 }
 
 template <class T>
 bool XArrayList<T>::removeItem(T item, void (*removeItemData)(T))
 {
     // TODO
+    for (int i = 0; i < count; i++){
+        if (itemEqual ? itemEqual(data[i], item) : data[i] == item){
+            if (removeItemData){
+                removeItemData(data[i]);
+            }
+            for (int j = i; j < count - 1; j++){
+                data[j] = data[j + 1];
+            }
+            count--;
+            return true;
+        }
+    }
+    return false;
 }
 
 template <class T>
 bool XArrayList<T>::empty()
 {
     // TODO
+    return this->count == 0;       
 }
 
 template <class T>
 int XArrayList<T>::size()
 {
     // TODO
+    return this->count;
 }
 
 template <class T>
 void XArrayList<T>::clear()
 {
     // TODO
+    if(deleteUserData != 0)
+        deleteUserData(this);
+    count = 0;
 }
 
 template <class T>
 T &XArrayList<T>::get(int index)
 {
     // TODO
+    checkIndex(index);
+    return data[index];
 }
 
 template <class T>
 int XArrayList<T>::indexOf(T item)
 {
     // TODO
+    for (int i = 0; i < count; i++)
+        if (equals(data[i], item, itemEqual))
+            return i;
+    return -1;
 }
 template <class T>
 bool XArrayList<T>::contains(T item)
 {
     // TODO
+    return indexOf(item) != -1;
 }
 
 template <class T>
@@ -303,6 +380,19 @@ string XArrayList<T>::toString(string (*item2str)(T &))
      */
 
     // TODO
+    string result = "[";
+    for (int i = 0; i < count; i++){
+        if (item2str){
+            result += item2str(data[i]);
+        } else {
+            stringstream ss;
+            ss << data[i];
+            result += ss.str();
+        }
+        if (i < count - 1) result += ", ";
+    }
+    result += "]"; 
+    return result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -317,6 +407,9 @@ void XArrayList<T>::checkIndex(int index)
      * Ensures safe access to the list's elements by preventing invalid index operations.
      */
     // TODO
+    if (index < 0 || index > count) {
+        throw std::out_of_range("Index out of range");
+    }
 }
 template <class T>
 void XArrayList<T>::ensureCapacity(int index)
@@ -328,6 +421,18 @@ void XArrayList<T>::ensureCapacity(int index)
      * In case of memory allocation failure, catches std::bad_alloc.
      */
     // TODO
+    checkIndex(index);
+    try {
+        if (index >= capacity) {
+            capacity = index*2;
+            T *newData = new T[capacity];
+            memcpy(newData, data, count * sizeof(T));
+            delete[] data;
+            data = newData;
+        }
+    } catch (std::bad_alloc& ba) {
+        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+    }
 }
 
 #endif /* XARRAYLIST_H */

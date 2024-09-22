@@ -517,7 +517,19 @@ void deleteIntArray(XArrayList<int*>* list); // Forward declaration
 
 
 int main(int argc, char** argv) {
-    xlistDemo4();
+    if(argc < 2){
+        cout << "Please provide the test case number" << endl;
+    }else{
+        int testID = atoi(argv[1]);
+        switch(testID){
+            case 1: xArrDemo1(); break;
+            case 2: xArrDemo2(); break;
+            case 3: xArrDemo3(); break;
+            case 4: xArrDemo4(); break;
+            case 5: xArrDemo5(); break;
+            default: cout << "Not implemented yet" << endl;
+        }
+    }
     cout << "Assignment-1" << endl;
     return 0;
 }
@@ -538,7 +550,7 @@ string int2str(int* & i) {
 }
 
 // TODO: Test cases
-void xlistDemo1(){
+void xArrDemo1(){
     XArrayList<int> iList;
     for(int i = 0; i< 10 ; i++)
         iList.add(i, i*i);
@@ -552,14 +564,14 @@ void xlistDemo1(){
     cout    << "lookup for " << item  << " found at: " << foundIdx << endl;
 }
 
-void xlistDemo2(){
+void xArrDemo2(){
     XArrayList<Point> alist;
     alist.add(Point(23.2f, 25.4f));
     alist.add(Point(24.6f, 23.1f));  
     alist.println();
 }
 
-void xlistDemo3(){
+void xArrDemo3(){
     XArrayList<Point> alist;
     alist.add(Point(23.2f, 25.4f));
     alist.add(Point(24.6f, 23.1f));  
@@ -571,7 +583,7 @@ void xlistDemo3(){
     cout << "result 2 : " << idx2 << endl;
 }
 
-void xlistDemo4(){
+void xArrDemo4(){
     XArrayList<Point*> list1(&XArrayList<Point*>::free, &Point::pointEQ);
     list1.add(new Point(23.2f, 25.4f));
     list1.add(new Point(24.6f, 23.1f));  
@@ -605,7 +617,7 @@ void xlistDemo4(){
     delete p1; delete p2;
 }
 
-void xlistDemo5(){
+void xArrDemo5(){
     XArrayList<Point> list1;
     list1.add(Point(23.2f, 25.4f));
     list1.add(Point(24.6f, 23.1f));  
@@ -648,7 +660,7 @@ void xlistDemo5(){
     cout << "List1 after clear: " << list1.size() << endl;
 }
 
-void xlistDemo6(){
+void xArrDemo6(){
     XArrayList<Point*> list1(&XArrayList<Point*>::free, &Point::pointEQ);
     list1.add(new Point(23.2f, 25.4f));
     list1.add(new Point(24.6f, 23.1f));  

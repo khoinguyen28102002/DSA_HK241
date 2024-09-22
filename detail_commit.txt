@@ -6,3 +6,9 @@ Time        Date            Modified
 22:30       13/9/2024       assignment1.cpp: Implement copy constructor, overload operator = 
                             Modified run.sh for clearly message
                             Create files:  code.txt - store old code, testcase.h - store prototype of testcase and helper func
+13:00       22/09/2024      Rename assignment1.cpp to ArrayList.cpp
+                            Copy implemented method from ArrayList.cpp to XArrayList.h (still not checked)
+                            Create file: DLinkedList.cpp
+                            Implement base method for doubly linked list:   constructor, destructor
+                                                                            add, remove, empty, size, clear, get, indexOf, contains, toString
+                            Add testcase prototype for DLinkedList to testcase.h

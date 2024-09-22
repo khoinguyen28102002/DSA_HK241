@@ -15,20 +15,36 @@
 #define TESTCASE_H
 #include <iostream>
 #include <iomanip>
+// #include "D:\HK241\DSA\BTL\dsastudents\dsastudents\include\util\Point.h"
 #include "util/Point.h"
+
 using namespace std;
 
-void xlistDemo1();
+void xArrDemo1();
 
-void xlistDemo2();
+void xArrDemo2();
 
-void xlistDemo3();
+void xArrDemo3();
 
-void xlistDemo4();
+void xArrDemo4();
 
-void xlistDemo5();
+void xArrDemo5();
 
-void xlistDemo6();
+void xArrDemo6();
+
+void dListDemo1();
+
+void dListDemo2();
+
+void dListDemo3();
+
+void dListDemo4();
+
+void dListDemo5();
+
+void dListDemo6();
+
+void dListDemo7();
 
 void clearTest();
 
