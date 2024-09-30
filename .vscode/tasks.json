@@ -7,8 +7,8 @@
 			"command": "C:\\msys64\\ucrt64\\bin\\g++.exe",
 			"args": [
 				"-g",
-				"-Iinclude",
-				"-Isrc",
+				"-I${workspaceFolder}/include",
+				"-I${workspaceFolder}/src",
 				"${file}",
 				"-o",
 				"${fileDirname}\\${fileBasenameNoExtension}.exe"

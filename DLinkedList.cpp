@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -339,28 +340,60 @@ DLinkedList<T>::DLinkedList(
     this->deleteUserData = deleteUserData;
 }
 
-// template <class T>
-// DLinkedList<T>::DLinkedList(const DLinkedList<T> &list)
-// {
-//     // TODO
-// }
+template <class T>
+DLinkedList<T>::DLinkedList(const DLinkedList<T> &list)
+{
+    // TODO
+    itemEqual = list.itemEqual;
+    deleteUserData = list.deleteUserData;
+    count = list.count;
+    head = new Node();
+    tail = new Node();
+    head->next = tail;
+    tail->prev = head;
+    Node *p = list.head->next;
+    while(p != list.tail){
+        if constexpr (std::is_pointer<T>::value) {
+            add(new std::remove_pointer_t<T>(*(p->data)));
+        } else {
+            add(p->data);
+        }
+    }
+}
 
-// template <class T>
-// DLinkedList<T> &DLinkedList<T>::operator=(const DLinkedList<T> &list)
-// {
-//     // TODO
-// }
+template <class T>
+DLinkedList<T> &DLinkedList<T>::operator=(const DLinkedList<T> &list)
+{
+    // TODO
+    if (this == &list)
+        return *this;
+    if(deleteUserData != 0)
+        deleteUserData(this);
+    clear();
+    itemEqual = list.itemEqual;
+    deleteUserData = list.deleteUserData;
+    Node *p = list.head->next;
+    while(p != list.tail){
+        if constexpr (std::is_pointer<T>::value) {
+            add(new std::remove_pointer_t<T>(*(p->data)));
+        } else {
+            add(p->data);
+        }
+        p = p->next;
+    }
+    this->count = list.count;
+    return *this;
+}
 
 template <class T>
 DLinkedList<T>::~DLinkedList()
 {
     // TODO
+    if(deleteUserData != 0)
+        deleteUserData(this);
     Node* current = head->next;
     while (current != tail) {
         Node* next = current->next;
-        if constexpr (std::is_pointer<T>::value) {
-            delete current->data;
-        }
         delete current;
         current = next;
     }
@@ -414,16 +447,33 @@ void DLinkedList<T>::add(int index, T e)
     }
 }
 
-// template <class T>
-// typename DLinkedList<T>::Node *DLinkedList<T>::getPreviousNodeOf(int index)
-// {
-//     /**
-//      * Returns the node preceding the specified index in the doubly linked list.
-//      * If the index is in the first half of the list, it traverses from the head; otherwise, it traverses from the tail.
-//      * Efficiently navigates to the node by choosing the shorter path based on the index's position.
-//      */
-//     // TODO
-// }
+template <class T>
+typename DLinkedList<T>::Node *DLinkedList<T>::getPreviousNodeOf(int index)
+{
+    /**
+     * Returns the node preceding the specified index in the doubly linked list.
+     * If the index is in the first half of the list, it traverses from the head; otherwise, it traverses from the tail.
+     * Efficiently navigates to the node by choosing the shorter path based on the index's position.
+     */
+    // TODO
+
+    if (index < 0 || index >= count) {
+        throw std::out_of_range("Index out of range");
+    }
+    if(index < count / 2){
+        Node* current = head->next;
+        for(int i = 0; i < index; i++){
+            current = current->next;
+        }
+        return current->prev;
+    }else{
+        Node* current = tail->prev;
+        for(int i = count - 1; i > index; i--){
+            current = current->prev;
+        }
+        return current;
+    }
+}
 
 template <class T>
 T DLinkedList<T>::removeAt(int index)
@@ -467,12 +517,12 @@ template <class T>
 void DLinkedList<T>::clear()
 {
     // TODO
+    if (deleteUserData) {
+        deleteUserData(this);
+    } 
     Node* current = head->next;
     while (current != tail) {
         Node* next = current->next;
-        if constexpr (std::is_pointer<T>::value) {
-            delete current->data;
-        }
         delete current;
         current = next;
     }
@@ -570,16 +620,27 @@ string DLinkedList<T>::toString(string (*item2str)(T &))
     return result;
 }
 
-// template <class T>
-// void DLinkedList<T>::copyFrom(const DLinkedList<T> &list)
-// {
-//     /**
-//      * Copies the contents of another doubly linked list into this list.
-//      * Initializes the current list to an empty state and then duplicates all data and pointers from the source list.
-//      * Iterates through the source list and adds each element, preserving the order of the nodes.
-//      */
-//     // TODO
-// }
+template <class T>
+void DLinkedList<T>::copyFrom(const DLinkedList<T> &list)
+{
+    /**
+     * Copies the contents of another doubly linked list into this list.
+     * Initializes the current list to an empty state and then duplicates all data and pointers from the source list.
+     * Iterates through the source list and adds each element, preserving the order of the nodes.
+     */
+    // TODO
+    clear();
+    itemEqual = list.itemEqual;
+    deleteUserData = list.deleteUserData;
+    Node *p = list.head->next;
+    while(p != list.tail){
+        if constexpr (std::is_pointer<T>::value) {
+            add(new std::remove_pointer_t<T>(*(p->data)));
+        } else {
+            add(p->data);
+        }
+    }
+}
 
 // template <class T>
 // void DLinkedList<T>::removeInternalData()
@@ -594,37 +655,38 @@ string DLinkedList<T>::toString(string (*item2str)(T &))
 
 
 int main(int argc, char** argv) {
-    if(argc < 2){
-        cout << "Please provide the test number" << endl;
-        return 1;
-    }else{
-        int testNum = atoi(argv[1]);
-        switch(testNum){
-            case 1:
-                dListDemo1();
-                break;
-            case 2:
-                dListDemo2();
-                break;
-            case 3:
-                dListDemo3();
-                break;
-            case 4:
-                dListDemo4();
-                break;
-            case 5:
-                dListDemo5();
-                break;
-            case 6:
-                dListDemo6();
-                break;
-            case 7:
-                dListDemo7();
-                break;
-            default:
-                cout << "Invalid test number" << endl;
-        }
-    }
+    // if(argc < 2){
+    //     cout << "Please provide the test number" << endl;
+    //     return 1;
+    // }else{
+    //     int testNum = atoi(argv[1]);
+    //     switch(testNum){
+    //         case 1:
+    //             dListDemo1();
+    //             break;
+    //         case 2:
+    //             dListDemo2();
+    //             break;
+    //         case 3:
+    //             dListDemo3();
+    //             break;
+    //         case 4:
+    //             dListDemo4();
+    //             break;
+    //         case 5:
+    //             dListDemo5();
+    //             break;
+    //         case 6:
+    //             dListDemo6();
+    //             break;
+    //         case 7:
+    //             dListDemo7();
+    //             break;
+    //         default:
+    //             cout << "Invalid test number" << endl;
+    //     }
+    // }
+    dListDemo7();
     cout << "Assignment-1" << endl;
     return 0;
 }
@@ -646,6 +708,8 @@ void dListDemo7(){
         list1.add(ptr);
     }
     list1.println();
+    list1.clear();
+    cout << list1.size() << endl;
 }
 void dListDemo2(){
     DLinkedList<Point*> list1(&DLinkedList<Point*>::free, &Point::pointEQ);

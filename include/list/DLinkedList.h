@@ -245,6 +245,13 @@ DLinkedList<T>::DLinkedList(
     bool (*itemEqual)(T &, T &))
 {
     // TODO
+    this->head = new Node();
+    this->tail = new Node();
+    this->head->next = this->tail;
+    this->tail->prev = this->head;
+    this->count = 0;
+    this->itemEqual = itemEqual;
+    this->deleteUserData = deleteUserData;
 }
 
 template <class T>
@@ -263,17 +270,62 @@ template <class T>
 DLinkedList<T>::~DLinkedList()
 {
     // TODO
+    Node* current = head->next;
+    while (current != tail) {
+        Node* next = current->next;
+        if constexpr (std::is_pointer<T>::value) {
+            delete current->data;
+        }
+        delete current;
+        current = next;
+    }
+    delete this->head, delete this->tail;
 }
 
 template <class T>
 void DLinkedList<T>::add(T e)
 {
     // TODO
+    Node* newNode = new Node(e, nullptr, nullptr);
+
+    if (head->next == tail) {
+        head->next = newNode;
+        newNode->prev = head;
+        newNode->next = tail;
+        tail->prev = newNode;
+    } 
+    else {
+        newNode->prev = tail->prev;
+        newNode->next = tail;
+        tail->prev->next = newNode;
+        tail->prev = newNode;
+    }
+
+    count++;
 }
 template <class T>
 void DLinkedList<T>::add(int index, T e)
 {
     // TODO
+    if(index < 0 || index > count){
+        throw std::out_of_range("Index out of range");
+    }else{
+        if(index == count){
+            add(e);
+        }else{
+            Node *newNode = new Node(e, nullptr, nullptr);
+            Node* current = head->next;
+            for (int i = 0; i < index; i++) {
+                current = current->next;
+            }
+            newNode->next = current;
+            newNode->prev = current->prev;
+            current->prev->next = newNode;
+            current->prev = newNode;
+
+            count++;
+        }
+    }
 }
 
 template <class T>
@@ -285,54 +337,139 @@ typename DLinkedList<T>::Node *DLinkedList<T>::getPreviousNodeOf(int index)
      * Efficiently navigates to the node by choosing the shorter path based on the index's position.
      */
     // TODO
+    if (index < 0 || index >= count) {
+        throw std::out_of_range("Index out of range");
+    }
+    if(index < count / 2){
+        Node* current = head->next;
+        for(int i = 0; i < index; i++){
+            current = current->next;
+        }
+        return current->prev;
+    }else{
+        Node* current = tail->prev;
+        for(int i = count - 1; i > index; i--){
+            current = current->prev;
+        }
+        return current;
+    }
 }
 
 template <class T>
 T DLinkedList<T>::removeAt(int index)
 {
     // TODO
+    if(index < 0 || index >= count){
+        throw std::out_of_range("Index out of range");
+    }
+    Node* current = head->next;
+    for (int i = 0; i < index; i++)
+        current = current->next;
+
+    T removedData = current->data;
+
+    if (current->prev)
+        current->prev->next = current->next;
+    if (current->next)
+        current->next->prev = current->prev;
+
+    delete current;
+    count--;
+    return removedData;
 }
 
 template <class T>
 bool DLinkedList<T>::empty()
 {
     // TODO
+    return count == 0;
 }
 
 template <class T>
 int DLinkedList<T>::size()
 {
     // TODO
+    return this->count;
 }
 
 template <class T>
 void DLinkedList<T>::clear()
 {
     // TODO
+    Node* current = head->next;
+    while (current != tail) {
+        Node* next = current->next;
+        if constexpr (std::is_pointer<T>::value) {
+            delete current->data;
+        }
+        delete current;
+        current = next;
+    }
+    head->next = tail;
+    tail->prev = head;
+    count = 0;
 }
 
 template <class T>
 T &DLinkedList<T>::get(int index)
 {
     // TODO
+    if(index < 0 || index >= count){
+        throw std::out_of_range("Index out of range");
+    }
+    Node* current = head->next;
+    for(int i = 0; i < index; i++){
+        current = current->next;
+    }
+    return current->data;
 }
 
 template <class T>
 int DLinkedList<T>::indexOf(T item)
 {
     // TODO
+    Node* current = head->next;
+    for(int i = 0; i < count; i++){
+        if(equals(current->data, item, itemEqual)){
+            return i;
+        }
+        current = current->next;
+    }
+    return -1;
 }
 
 template <class T>
 bool DLinkedList<T>::removeItem(T item, void (*removeItemData)(T))
 {
     // TODO
+    int index = indexOf(item);
+    if(head == nullptr || index == -1){
+        return false;
+    }
+    Node* current = head->next;
+    for(int i = 0; i < index; i++){
+        current = current->next;
+    }
+    T removedData = current->data;
+
+    // Update previous and next pointers
+    if (current->prev)
+        current->prev->next = current->next;
+    if (current->next)
+        current->next->prev = current->prev;
+
+    if (removeItemData != 0)
+        removeItemData(current->data);
+    delete current;
+    count--;
+    return true;
 }
 
 template <class T>
 bool DLinkedList<T>::contains(T item)
 {
     // TODO
+    return indexOf(item) != -1;
 }
 
 template <class T>
@@ -347,6 +484,19 @@ string DLinkedList<T>::toString(string (*item2str)(T &))
      * @return A string representation of the list with elements separated by commas and enclosed in square brackets.
      */
     // TODO
+    string result = "[";
+    for (Node *current = head->next; current != tail; current = current->next){
+        if (item2str){
+            result += item2str(current->data);
+        } else {
+            stringstream ss;
+            ss << current->data;
+            result += ss.str();
+        }
+        if (current->next != tail) result += ", ";
+    }
+    result += "]"; 
+    return result;
 }
 
 template <class T>
@@ -358,6 +508,8 @@ void DLinkedList<T>::copyFrom(const DLinkedList<T> &list)
      * Iterates through the source list and adds each element, preserving the order of the nodes.
      */
     // TODO
+    clear();
+    this = 
 }
 
 template <class T>

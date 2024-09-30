@@ -12,3 +12,5 @@ Time        Date            Modified
                             Implement base method for doubly linked list:   constructor, destructor
                                                                             add, remove, empty, size, clear, get, indexOf, contains, toString
                             Add testcase prototype for DLinkedList to testcase.h
+00:30       01/10/2024      DLinkedList: implement copyFrom, getPreviousNodeOf, copy constructor, overload operator = 
+                            Copy implemented method from DLinkedList.cpp to DLinkedList.h (still not checked)

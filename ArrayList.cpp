@@ -325,13 +325,17 @@ XArrayList<T> &XArrayList<T>::operator=(const XArrayList<T> &list)
         return *this; 
 
     if(deleteUserData != 0)
-        deleteUserData(this);
+        if constexpr (std::is_pointer<T>::value){
+            deleteUserData(this);
+        }
 
     if(data)
         delete[] data;
 
     count = list.count;
     capacity = list.capacity;
+    itemEqual = list.itemEqual;
+    deleteUserData = list.deleteUserData;
     data = new T[capacity];
 
     for (int i = 0; i < count; i++){
@@ -349,8 +353,11 @@ XArrayList<T> &XArrayList<T>::operator=(const XArrayList<T> &list)
 template <class T>
 XArrayList<T>::~XArrayList()
 {
-    if(deleteUserData != 0)
-        deleteUserData(this);
+    if(deleteUserData != 0){
+        if constexpr (std::is_pointer<T>::value){
+            deleteUserData(this);
+        }
+    }
     if(data) delete[] data;
 }
 
@@ -420,7 +427,11 @@ template <class T>
 void XArrayList<T>::clear()
 {
     if(deleteUserData != 0)
-        deleteUserData(this);
+        if constexpr (std::is_pointer<T>::value){
+            deleteUserData(this);
+        }
+    delete [] data;
+    data = new T[capacity];
     count = 0;
 }
 
@@ -517,19 +528,21 @@ void deleteIntArray(XArrayList<int*>* list); // Forward declaration
 
 
 int main(int argc, char** argv) {
-    if(argc < 2){
-        cout << "Please provide the test case number" << endl;
-    }else{
-        int testID = atoi(argv[1]);
-        switch(testID){
-            case 1: xArrDemo1(); break;
-            case 2: xArrDemo2(); break;
-            case 3: xArrDemo3(); break;
-            case 4: xArrDemo4(); break;
-            case 5: xArrDemo5(); break;
-            default: cout << "Not implemented yet" << endl;
-        }
-    }
+    // if(argc < 2){
+    //     cout << "Please provide the test case number" << endl;
+    // }else{
+    //     int testID = atoi(argv[1]);
+    //     switch(testID){
+    //         case 1: xArrDemo1(); break;
+    //         case 2: xArrDemo2(); break;
+    //         case 3: xArrDemo3(); break;
+    //         case 4: xArrDemo4(); break;
+    //         case 5: xArrDemo5(); break;
+    //         default: cout << "Not implemented yet" << endl;
+    //     }
+    // }
+    // xArrDemo1();
+    clearTest();
     cout << "Assignment-1" << endl;
     return 0;
 }
@@ -555,13 +568,10 @@ void xArrDemo1(){
     for(int i = 0; i< 10 ; i++)
         iList.add(i, i*i);
     
-    //iList.dump();
-    for(XArrayList<int>::Iterator it=iList.begin(); it != iList.end(); it++ )
-        cout << *it << ", found at: " << iList.indexOf(*it) << endl;
-    cout << endl;
-    int item = 120;
-    int foundIdx = iList.indexOf(item);
-    cout    << "lookup for " << item  << " found at: " << foundIdx << endl;
+    iList.println();
+    iList.clear();
+    iList.println();
+    cout << "Size after clear: " << iList.size() << endl;
 }
 
 void xArrDemo2(){
@@ -700,15 +710,23 @@ void clearTest(){
         int* ptr = new int(i);
         list1.add(ptr);
     }
-    cout << "List size: " << list1.size() << endl;
-    XArrayList<int*> list2(list1);
-    cout << "List2 size: " << list2.size() << endl;
-    list2.add(5, new int(10));
-    list1 = list2;
-    XArrayList<int*> list3 = list2;
-    cout << "List3: " << list3.toString(&int2str) << endl;  
-    list1 = list2;
-    cout << "List1: " << list1.toString(&int2str) << endl; 
+    list1.println(int2str);
     list1.clear();
-    cout << "List1 after clear: " << list1.size() << endl;
+    cout << list1.size() << endl;
+    for(int i = 8; i < 13; i++){
+        int* ptr = new int(i);
+        list1.add(ptr);
+    }
+    list1.println(int2str);
+    // cout << "List size: " << list1.size() << endl;
+    // XArrayList<int*> list2(list1);
+    // cout << "List2 size: " << list2.size() << endl;
+    // list2.add(5, new int(10));
+    // list1 = list2;
+    // XArrayList<int*> list3 = list2;
+    // cout << "List3: " << list3.toString(&int2str) << endl;  
+    // list1 = list2;
+    // cout << "List1: " << list1.toString(&int2str) << endl; 
+    // list1.clear();
+    // cout << "List1 after clear: " << list1.size() << endl;
 }

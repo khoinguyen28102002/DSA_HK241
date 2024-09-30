@@ -22,7 +22,7 @@ echo "-------------------------------------------"
 echo "------------CHECK LEAK MEM-----------------"
 echo "-------------------------------------------"
 echo ""
-valgrind --track-origins=no  --leak-check=full ./assignment1 $1 > /dev/null
+valgrind --track-origins=no  --leak-check=full ./assignment1 > /dev/null
 
 #run program
 echo ""
@@ -30,4 +30,4 @@ echo "-------------------------------------------"
 echo "-------------RUN PROGRAM-------------------"
 echo "-------------------------------------------"
 echo ""
-./assignment1 $1
+./assignment1
