@@ -5,7 +5,6 @@
 #include <string>
 #include <memory.h>
 #include <type_traits>
-#include "testcase.h"
 
 using namespace std;
 
@@ -344,34 +343,13 @@ template <class T>
 DLinkedList<T>::DLinkedList(const DLinkedList<T> &list)
 {
     // TODO
-    itemEqual = list.itemEqual;
-    deleteUserData = list.deleteUserData;
-    count = list.count;
-    head = new Node();
-    tail = new Node();
-    head->next = tail;
-    tail->prev = head;
-    Node *p = list.head->next;
-    while(p != list.tail){
-        if constexpr (std::is_pointer<T>::value) {
-            add(new std::remove_pointer_t<T>(*(p->data)));
-        } else {
-            add(p->data);
-        }
-    }
-}
-
-template <class T>
-DLinkedList<T> &DLinkedList<T>::operator=(const DLinkedList<T> &list)
-{
-    // TODO
-    if (this == &list)
-        return *this;
-    if(deleteUserData != 0)
-        deleteUserData(this);
-    clear();
-    itemEqual = list.itemEqual;
-    deleteUserData = list.deleteUserData;
+    this->itemEqual = list.itemEqual;
+    this->deleteUserData = list.deleteUserData;
+    this->count = 0;
+    this->head = new Node();
+    this->tail = new Node();
+    this->head->next = this->tail;
+    this->tail->prev = this->head;
     Node *p = list.head->next;
     while(p != list.tail){
         if constexpr (std::is_pointer<T>::value) {
@@ -381,7 +359,30 @@ DLinkedList<T> &DLinkedList<T>::operator=(const DLinkedList<T> &list)
         }
         p = p->next;
     }
-    this->count = list.count;
+}
+
+template <class T>
+DLinkedList<T> &DLinkedList<T>::operator=(const DLinkedList<T> &list)
+{
+    // TODO
+    if (this == &list)
+        return *this;
+
+    clear();
+
+    this->itemEqual = list.itemEqual;
+    this->deleteUserData = list.deleteUserData;
+    this->count = 0;
+
+    Node *p = list.head->next;
+    while(p != list.tail){
+        if constexpr (std::is_pointer<T>::value) {
+            add(new std::remove_pointer_t<T>(*(p->data)));
+        } else {
+            add(p->data);
+        }
+        p = p->next;
+    }
     return *this;
 }
 
@@ -404,21 +405,11 @@ template <class T>
 void DLinkedList<T>::add(T e)
 {
     // TODO
-    Node* newNode = new Node(e, nullptr, nullptr);
-
-    if (head->next == tail) {
-        head->next = newNode;
-        newNode->prev = head;
-        newNode->next = tail;
-        tail->prev = newNode;
-    } 
-    else {
-        newNode->prev = tail->prev;
-        newNode->next = tail;
-        tail->prev->next = newNode;
-        tail->prev = newNode;
-    }
-
+    Node* newNode = new Node(e);
+    newNode->prev = tail->prev;
+    newNode->next = tail;
+    tail->prev->next = newNode;
+    tail->prev = newNode;
     count++;
 }
 
@@ -468,7 +459,7 @@ typename DLinkedList<T>::Node *DLinkedList<T>::getPreviousNodeOf(int index)
         return current->prev;
     }else{
         Node* current = tail->prev;
-        for(int i = count - 1; i > index; i--){
+        for(int i = count - 1; i >= index; i--){
             current = current->prev;
         }
         return current;
@@ -482,10 +473,13 @@ T DLinkedList<T>::removeAt(int index)
     if(index < 0 || index >= count){
         throw std::out_of_range("Index out of range");
     }
+    if (head->next == tail){
+        return T();
+    }
     Node* current = head->next;
     for (int i = 0; i < index; i++)
         current = current->next;
-
+    
     T removedData = current->data;
 
     // Update previous and next pointers
@@ -494,6 +488,9 @@ T DLinkedList<T>::removeAt(int index)
     if (current->next)
         current->next->prev = current->prev;
 
+    // if constexpr (std::is_pointer<T>::value) {
+    //     delete current->data;
+    // }
     delete current;
     count--;
     return removedData;
@@ -583,7 +580,7 @@ bool DLinkedList<T>::removeItem(T item, void (*removeItemData)(T))
         removeItemData(current->data);
     delete current;
     count--;
-    return true;
+    return true;    
 }
 
 template <class T>
@@ -639,164 +636,38 @@ void DLinkedList<T>::copyFrom(const DLinkedList<T> &list)
         } else {
             add(p->data);
         }
+        p = p->next;
     }
 }
 
-// template <class T>
-// void DLinkedList<T>::removeInternalData()
-// {
-//     /**
-//      * Clears the internal data of the list by deleting all nodes and user-defined data.
-//      * If a custom deletion function is provided, it is used to free the user's data stored in the nodes.
-//      * Traverses and deletes each node between the head and tail to release memory.
-//      */
-//     // TODO
+template <class T>
+void DLinkedList<T>::removeInternalData()
+{
+    /**
+     * Clears the internal data of the list by deleting all nodes and user-defined data.
+     * If a custom deletion function is provided, it is used to free the user's data stored in the nodes.
+     * Traverses and deletes each node between the head and tail to release memory.
+     */
+    // TODO
+    if (deleteUserData) {
+        deleteUserData(this);
+    } 
+    Node* current = head->next;
+    while (current != tail) {
+        Node* next = current->next;
+        delete current;
+        current = next;
+    }
+    head->next = tail;
+    tail->prev = head;
+    count = 0;
+}
+
+
+
+
+// int main(int argc, char** argv) {
+
+//     cout << "Assignment-1" << endl;
+//     return 0;
 // }
-
-
-int main(int argc, char** argv) {
-    // if(argc < 2){
-    //     cout << "Please provide the test number" << endl;
-    //     return 1;
-    // }else{
-    //     int testNum = atoi(argv[1]);
-    //     switch(testNum){
-    //         case 1:
-    //             dListDemo1();
-    //             break;
-    //         case 2:
-    //             dListDemo2();
-    //             break;
-    //         case 3:
-    //             dListDemo3();
-    //             break;
-    //         case 4:
-    //             dListDemo4();
-    //             break;
-    //         case 5:
-    //             dListDemo5();
-    //             break;
-    //         case 6:
-    //             dListDemo6();
-    //             break;
-    //         case 7:
-    //             dListDemo7();
-    //             break;
-    //         default:
-    //             cout << "Invalid test number" << endl;
-    //     }
-    // }
-    dListDemo7();
-    cout << "Assignment-1" << endl;
-    return 0;
-}
-void dListDemo1(){
-    List<int> dlist;
-    for(int i = 0; i< 20 ; i++)
-        dlist.add(i, i*i);
-        // dlist.add(i);
-    dlist.println();
-    
-    for(List<int>::Iterator it=dlist.begin(); it != dlist.end(); it++ )
-        cout << *it << " ";
-    cout << endl;
-}
-void dListDemo7(){
-    DLinkedList<int*> list1(&DLinkedList<int*>::free, nullptr);
-    for(int i = 0; i < 8; i++){
-        int* ptr = new int(i);
-        list1.add(ptr);
-    }
-    list1.println();
-    list1.clear();
-    cout << list1.size() << endl;
-}
-void dListDemo2(){
-    DLinkedList<Point*> list1(&DLinkedList<Point*>::free, &Point::pointEQ);
-    list1.add(new Point(23.2f, 25.4f));
-    list1.add(new Point(24.6f, 23.1f));  
-    list1.add(new Point(12.5f, 22.3f)); 
-    
-    for(DLinkedList<Point*>::Iterator it = list1.begin(); it != list1.end(); it++)
-        cout << **it << endl;
-    
-    Point* p1 = new Point(24.6f, 23.1f); //found in list
-    Point* p2 = new Point(124.6f, 23.1f); //not found
-    cout << *p1 << "=> " << (list1.contains(p1)? "found; " : "not found; ")
-                << " indexOf returns: " << list1.indexOf(p1) << endl;
-    cout << *p2 << "=> " << (list1.contains(p2)? "found; " : "not found; ")
-                << " indexOf returns: " << list1.indexOf(p2) << endl;
-    
-    ///Different results if not pass &Point::equals
-    cout << endl << endl;
-    DLinkedList<Point*> list2(&DLinkedList<Point*>::free);
-    list2.add(new Point(23.2f, 25.4f));
-    list2.add(new Point(24.6f, 23.1f));  
-    list2.add(new Point(12.5f, 22.3f)); 
-    
-    for(DLinkedList<Point*>::Iterator it = list2.begin(); it != list2.end(); it++)
-        cout << **it << endl;
-    
-    cout << *p1 << "=> " << (list2.contains(p1)? "found; " : "not found; ")
-                << " indexOf returns: " << list2.indexOf(p1) << endl;
-    cout << *p2 << "=> " << (list2.contains(p2)? "found; " : "not found; ")
-                << " indexOf returns: " << list2.indexOf(p2) << endl;
-    
-    delete p1; delete p2;
-}
-
-void dListDemo3(){
-    DLinkedList<Point> dList;
-    dList.add(Point(1.5, 3.5));
-    dList.add(Point(2.5, 4.5));
-    dList.add(Point(1.6, 3.1));
-    
-    cout << "test for indexOf: " << endl;
-    Point p(1.6, 3.1);
-    cout << p << " at: " << dList.indexOf(p);
-}
-bool pointComparator(Point*& p1, Point*& p2){
-    return (p1->getX() == p2->getX()) && (p1->getY() == p2->getY());
-}
-string LpointPtr2Str(Point*& ptr){
-    stringstream os;
-    os << "("   << ptr->getX() << ", " 
-                << ptr->getY()
-       << ")";
-    return os.str();
-}
-void dListDemo4(){
-    DLinkedList<Point*> dList(&DLinkedList<Point*>::free, &pointComparator);
-    dList.add(new Point(1.5, 3.5));
-    dList.add(new Point(2.5, 4.5));
-    dList.add(new Point(1.6, 3.1));
-    dList.println(&LpointPtr2Str);
-    
-    cout << "test for indexOf: " << endl;
-    Point* p = new Point(1.6, 3.1);
-    cout << *p << " at: " << dList.indexOf(p) << endl;
-    delete p;
-}
-void dListDemo5(){
-    DLinkedList<float> dList;
-    dList.add(3.2);
-    dList.add(5.5);
-    dList.println();
-    cout << "index of 5.5: " << dList.indexOf(5.5) << endl;
-    cout << "index of 15.5: " << dList.indexOf(15.5) << endl;
-}
-
-void dListDemo6(){
-    List<int> list;
-    for(int i = 0; i< 10 ; i++)
-        list.add(i, i*i);
-    
-    cout << setw(25) << left << "Original list: ";
-    list.println();
-    
-    //
-    int& item = list.get(5);
-    item = 999;
-    cout << setw(25) << left << "After changing an item: ";
-    list.println();
-}

@@ -14,3 +14,4 @@ Time        Date            Modified
                             Add testcase prototype for DLinkedList to testcase.h
 00:30       01/10/2024      DLinkedList: implement copyFrom, getPreviousNodeOf, copy constructor, overload operator = 
                             Copy implemented method from DLinkedList.cpp to DLinkedList.h (still not checked)
+00:20       02/10/2024      Complete checked doubly linked list
