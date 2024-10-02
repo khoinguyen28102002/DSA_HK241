@@ -8,16 +8,22 @@
 
 # PROGRAM = "DLinkedList.cpp"
 
-echo "-------------------------------------------"
-echo "----------DOUBLY LINKED LIST---------------"
+# echo "-------------------------------------------"
+# echo "----------DOUBLY LINKED LIST---------------"
 # g++ -Iinclude -Isrc -std=c++17 DLinkedList.cpp -o assignment1
 # g++ -Iinclude -Isrc -std=c++17 DLinkedList_test.cpp -o assignment1
-g++ -Iinclude -Isrc -std=c++17 dlinkedlist-test-cases.cpp -o assignment1
 
 
 # echo "-------------------------------------------"
 # echo "--------------ARRAY LIST-------------------"
 # g++ -Iinclude -Isrc -std=c++17 ArrayList.cpp -o assignment1
+# g++ -Iinclude -Isrc -std=c++17 IListDemo.cpp -o assignment1
+# g++ -Iinclude -Isrc -std=c++17 XArrayList_test.cpp -o assignment1
+
+
+echo "-------------------------------------------"
+echo "-----------------MAIN----------------------"
+g++ -Iinclude -Isrc -std=c++17 main.cpp -o assignment1
 
 #check leak mem
 

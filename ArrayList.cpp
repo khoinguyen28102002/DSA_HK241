@@ -4,7 +4,6 @@
 #include <string>
 #include <memory.h>
 #include <type_traits>
-#include "testcase.h"
 
 using namespace std;
 
@@ -197,9 +196,9 @@ class XArrayList : public IList<T>
                 return itemEqual(lhs, rhs);
         }
 
-        // void copyFrom(const XArrayList<T> &list);
+        void copyFrom(const XArrayList<T> &list);
 
-        // void removeInternalData();
+        void removeInternalData();
 
         //////////////////////////////////////////////////////////////////////
         ////////////////////////  INNER CLASSES DEFNITION ////////////////////
@@ -278,27 +277,43 @@ XArrayList<T>::XArrayList(
     this->data = new T[capacity];
 }
 
-// template <class T>
-// void XArrayList<T>::copyFrom(const XArrayList<T> &list)
-// {
-//     /*
-//      * Copies the contents of another XArrayList into this list.
-//      * Initializes the list with the same capacity as the source list and copies all elements.
-//      * Also duplicates user-defined comparison and deletion functions, if applicable.
-//      */
-//     // TODO
-// }
+template <class T>
+void XArrayList<T>::copyFrom(const XArrayList<T> &list)
+{
+    /*
+     * Copies the contents of another XArrayList into this list.
+     * Initializes the list with the same capacity as the source list and copies all elements.
+     * Also duplicates user-defined comparison and deletion functions, if applicable.
+     */
+    // TODO
+    clear();
+    itemEqual = list.itemEqual;
+    deleteUserData = list.deleteUserData;
+    for (int i = 0; i < list.count; i++){
+        if constexpr (std::is_pointer<T>::value) {
+            data[i] = new std::remove_pointer_t<T>(*(list.data[i]));
+        } else {
+            data[i] = list.data[i];
+        }
+    }
+}
 
-// template <class T>
-// void XArrayList<T>::removeInternalData()
-// {
-//     /*
-//      * Clears the internal data of the list by deleting the dynamic array and any user-defined data.
-//      * If a custom deletion function is provided, it is used to free the stored elements.
-//      * Finally, the dynamic array itself is deallocated from memory.
-//      */
-//     // TODO
-// }
+template <class T>
+void XArrayList<T>::removeInternalData()
+{
+    /*
+     * Clears the internal data of the list by deleting the dynamic array and any user-defined data.
+     * If a custom deletion function is provided, it is used to free the stored elements.
+     * Finally, the dynamic array itself is deallocated from memory.
+     */
+    // TODO
+    if (deleteUserData) {
+        deleteUserData(this);
+    }
+    delete [] data;
+    data = new T[capacity];
+    count = 0;
+}
 
 template <class T>
 XArrayList<T>::XArrayList(const XArrayList<T> &list){
@@ -324,11 +339,11 @@ XArrayList<T> &XArrayList<T>::operator=(const XArrayList<T> &list)
     if (this == &list)
         return *this; 
 
-    if(deleteUserData != 0)
+    if(deleteUserData != 0){
         if constexpr (std::is_pointer<T>::value){
             deleteUserData(this);
         }
-
+    }
     if(data)
         delete[] data;
 
@@ -373,6 +388,8 @@ void XArrayList<T>::add(T e)
 template <class T>
 void XArrayList<T>::add(int index, T e)
 {
+    if(index < 0 || index > count)
+        throw std::out_of_range("Index out of range");
     ensureCapacity(index);
     for(int i = count; i > index; i--)
         data[i] = data[i-1];
@@ -384,8 +401,7 @@ void XArrayList<T>::add(int index, T e)
 template <class T>
 T XArrayList<T>::removeAt(int index)
 {
-    if(index < 0 || index >= count)
-        throw std::out_of_range("Index out of range");
+    checkIndex(index);
     T item = data[index];
     for(int i = index; i < count-1; i++)
         data[i] = data[i+1];
@@ -396,19 +412,20 @@ T XArrayList<T>::removeAt(int index)
 template <class T>
 bool XArrayList<T>::removeItem(T item, void (*removeItemData)(T))
 {
-    for (int i = 0; i < count; i++){
-        if (itemEqual ? itemEqual(data[i], item) : data[i] == item){
-            if (removeItemData){
-                removeItemData(data[i]);
-            }
-            for (int j = i; j < count - 1; j++){
-                data[j] = data[j + 1];
-            }
-            count--;
-            return true;
-        }
+    int index = indexOf(item); 
+    if(index == -1) {
+        return false;
     }
-    return false;
+    if(removeItemData) {
+        removeItemData(data[index]);
+    }else if constexpr (std::is_pointer<T>::value){
+        delete data[index];
+    }
+    for(int i = index; i < count-1; i++) {
+        data[i] = data[i+1];
+    }
+    count--;
+    return true;
 }
 
 template <class T>
@@ -496,7 +513,7 @@ void XArrayList<T>::checkIndex(int index)
      * Throws an std::out_of_range exception if the index is negative or exceeds the number of elements.
      * Ensures safe access to the list's elements by preventing invalid index operations.
      */
-    if (index < 0 || index > count) {
+    if (index < 0 || index >= count) {
         throw std::out_of_range("Index out of range");
     }
 }
@@ -509,224 +526,21 @@ void XArrayList<T>::ensureCapacity(int index)
      * reallocates the internal array with increased capacity, copying the existing elements to the new array.
      * In case of memory allocation failure, catches std::bad_alloc.
      */
-    checkIndex(index);
-    try {
-        if (index >= capacity) {
-            capacity = index*2;
-            T *newData = new T[capacity];
-            memcpy(newData, data, count * sizeof(T));
-            delete[] data;
-            data = newData;
+    if (index < 0 || index > count) {
+        throw std::out_of_range("Index out of range");
+    }
+    if (index >= capacity) {
+        capacity = index*2;
+        T *newData = new T[capacity];
+        for (int i = 0; i < count; i++){
+            if constexpr (std::is_pointer<T>::value) {
+                newData[i] = new std::remove_pointer_t<T>(*(data[i]));
+            } else {
+                newData[i] = data[i];
+            }
         }
-    } catch (std::bad_alloc& ba) {
-        std::cerr << "bad_alloc caught: " << ba.what() << '\n';
+        delete[] data;
+        data = newData;
     }
 }
 
-
-void deleteIntArray(XArrayList<int*>* list); // Forward declaration
-
-
-int main(int argc, char** argv) {
-    // if(argc < 2){
-    //     cout << "Please provide the test case number" << endl;
-    // }else{
-    //     int testID = atoi(argv[1]);
-    //     switch(testID){
-    //         case 1: xArrDemo1(); break;
-    //         case 2: xArrDemo2(); break;
-    //         case 3: xArrDemo3(); break;
-    //         case 4: xArrDemo4(); break;
-    //         case 5: xArrDemo5(); break;
-    //         default: cout << "Not implemented yet" << endl;
-    //     }
-    // }
-    // xArrDemo1();
-    clearTest();
-    cout << "Assignment-1" << endl;
-    return 0;
-}
-
-// TODO: Implement helper functions for testing
-void deleteIntArray(XArrayList<int*>* list) {
-    for (int i = 0; i < list->size(); ++i) {
-        delete list->get(i); // Delete each int* in the list
-    }
-}
-
-bool compareIntPtrs(int*& a, int*& b) {
-    return *a == *b;
-}
-
-string int2str(int* & i) {
-    return to_string(*i);
-}
-
-// TODO: Test cases
-void xArrDemo1(){
-    XArrayList<int> iList;
-    for(int i = 0; i< 10 ; i++)
-        iList.add(i, i*i);
-    
-    iList.println();
-    iList.clear();
-    iList.println();
-    cout << "Size after clear: " << iList.size() << endl;
-}
-
-void xArrDemo2(){
-    XArrayList<Point> alist;
-    alist.add(Point(23.2f, 25.4f));
-    alist.add(Point(24.6f, 23.1f));  
-    alist.println();
-}
-
-void xArrDemo3(){
-    XArrayList<Point> alist;
-    alist.add(Point(23.2f, 25.4f));
-    alist.add(Point(24.6f, 23.1f));  
-    
-    int idx1 = alist.indexOf(Point(24.6f, 23.1f));
-    int idx2 = alist.indexOf(Point(24.61f, 23.1f));
-    
-    cout << "result 1 : " << idx1 << endl;
-    cout << "result 2 : " << idx2 << endl;
-}
-
-void xArrDemo4(){
-    XArrayList<Point*> list1(&XArrayList<Point*>::free, &Point::pointEQ);
-    list1.add(new Point(23.2f, 25.4f));
-    list1.add(new Point(24.6f, 23.1f));  
-    list1.add(new Point(12.5f, 22.3f)); 
-    
-    for(XArrayList<Point*>::Iterator it = list1.begin(); it != list1.end(); it++)
-        cout << **it << endl;
-    
-    Point* p1 = new Point(24.6f, 23.1f); //found in list
-    Point* p2 = new Point(124.6f, 23.1f); //not found
-    cout << *p1 << "=> " << (list1.contains(p1)? "found; " : "not found; ")
-                << " indexOf returns: " << list1.indexOf(p1) << endl;
-    cout << *p2 << "=> " << (list1.contains(p2)? "found; " : "not found; ")
-                << " indexOf returns: " << list1.indexOf(p2) << endl;
-    
-    ///Different results if not pass &Point::equals
-    cout << endl << endl;
-    XArrayList<Point*> list2(&XArrayList<Point*>::free);
-    list2.add(new Point(23.2f, 25.4f));
-    list2.add(new Point(24.6f, 23.1f));  
-    list2.add(new Point(12.5f, 22.3f)); 
-    
-    for(XArrayList<Point*>::Iterator it = list2.begin(); it != list2.end(); it++)
-        cout << **it << endl;
-    
-    cout << *p1 << "=> " << (list2.contains(p1)? "found; " : "not found; ")
-                << " indexOf returns: " << list2.indexOf(p1) << endl;
-    cout << *p2 << "=> " << (list2.contains(p2)? "found; " : "not found; ")
-                << " indexOf returns: " << list2.indexOf(p2) << endl;
-    
-    delete p1; delete p2;
-}
-
-void xArrDemo5(){
-    XArrayList<Point> list1;
-    list1.add(Point(23.2f, 25.4f));
-    list1.add(Point(24.6f, 23.1f));  
-    list1.add(Point(12.5f, 22.3f)); 
-    
-    for(XArrayList<Point>::Iterator it = list1.begin(); it != list1.end(); it++)
-        cout << *it << endl;
-    
-    Point p1 = Point(24.6f, 23.1f); //found in list
-    Point p2 = Point(124.6f, 23.1f); //not found
-    cout << p1 << "=> " << (list1.contains(p1)? "found; " : "not found; ")
-                << " indexOf returns: " << list1.indexOf(p1) << endl;
-    cout << p2 << "=> " << (list1.contains(p2)? "found; " : "not found; ")
-                << " indexOf returns: " << list1.indexOf(p2) << endl;
-    
-    ///Different results if not pass &Point::equals
-    cout << endl << endl;
-    XArrayList<Point> list2(list1);
-    list2.add(Point(23.2f, 25.4f));
-    list2.add(Point(24.6f, 23.1f));  
-    list2.add(Point(12.5f, 22.3f)); 
-    
-    for(XArrayList<Point>::Iterator it = list2.begin(); it != list2.end(); it++)
-        cout << *it << endl;
-    
-    cout << p1 << "=> " << (list2.contains(p1)? "found; " : "not found; ")
-                << " indexOf returns: " << list2.indexOf(p1) << endl;
-    cout << p2 << "=> " << (list2.contains(p2)? "found; " : "not found; ")
-                << " indexOf returns: " << list2.indexOf(p2) << endl;
-    
-    
-    cout << "List1 size: " << list1.size() << endl;
-    cout << "List2 size: " << list2.size() << endl;
-    list1 = list2;
-    cout << "List1 after assignment: " << list1.toString(&Point::point2str) << endl; 
-    XArrayList<Point> list3 = list2;
-    cout << "List3: " << list3.toString(&Point::point2str) << endl;  
-    
-    list1.clear();
-    cout << "List1 after clear: " << list1.size() << endl;
-}
-
-void xArrDemo6(){
-    XArrayList<Point*> list1(&XArrayList<Point*>::free, &Point::pointEQ);
-    list1.add(new Point(23.2f, 25.4f));
-    list1.add(new Point(24.6f, 23.1f));  
-    list1.add(new Point(12.5f, 22.3f)); 
-    
-    for(XArrayList<Point*>::Iterator it = list1.begin(); it != list1.end(); it++)
-        cout << **it << endl;
-    
-    Point* p1 = new Point(24.6f, 23.1f); //found in list
-    Point* p2 = new Point(124.6f, 23.1f); //not found
-    cout << *p1 << "=> " << (list1.contains(p1)? "found; " : "not found; ")
-                << " indexOf returns: " << list1.indexOf(p1) << endl;
-    cout << *p2 << "=> " << (list1.contains(p2)? "found; " : "not found; ")
-                << " indexOf returns: " << list1.indexOf(p2) << endl;
-    
-    ///Different results if not pass &Point::equals
-    cout << endl << endl;
-    XArrayList<Point*> list2(list1);
-    list2.add(new Point(23.3f, 22.4f));
-    list2.add(new Point(14.6f, 23.1f));  
-    list2.add(new Point(12.5f, 22.3f)); 
-    
-    for(XArrayList<Point*>::Iterator it = list2.begin(); it != list2.end(); it++)
-        cout << **it << endl;
-    
-    cout << *p1 << "=> " << (list2.contains(p1)? "found; " : "not found; ")
-                << " indexOf returns: " << list2.indexOf(p1) << endl;
-    cout << *p2 << "=> " << (list2.contains(p2)? "found; " : "not found; ")
-                << " indexOf returns: " << list2.indexOf(p2) << endl;
-    
-    delete p1; delete p2;
-}
-
-void clearTest(){
-    XArrayList<int*> list1(&XArrayList<int*>::free, nullptr, 15);
-    for(int i = 0; i < 8; i++){
-        int* ptr = new int(i);
-        list1.add(ptr);
-    }
-    list1.println(int2str);
-    list1.clear();
-    cout << list1.size() << endl;
-    for(int i = 8; i < 13; i++){
-        int* ptr = new int(i);
-        list1.add(ptr);
-    }
-    list1.println(int2str);
-    // cout << "List size: " << list1.size() << endl;
-    // XArrayList<int*> list2(list1);
-    // cout << "List2 size: " << list2.size() << endl;
-    // list2.add(5, new int(10));
-    // list1 = list2;
-    // XArrayList<int*> list3 = list2;
-    // cout << "List3: " << list3.toString(&int2str) << endl;  
-    // list1 = list2;
-    // cout << "List1: " << list1.toString(&int2str) << endl; 
-    // list1.clear();
-    // cout << "List1 after clear: " << list1.size() << endl;
-}

@@ -200,6 +200,16 @@ void XArrayList<T>::copyFrom(const XArrayList<T> &list)
      * Also duplicates user-defined comparison and deletion functions, if applicable.
      */
     // TODO
+    clear();
+    itemEqual = list.itemEqual;
+    deleteUserData = list.deleteUserData;
+    for (int i = 0; i < list.count; i++){
+        if constexpr (std::is_pointer<T>::value) {
+            data[i] = new std::remove_pointer_t<T>(*(list.data[i]));
+        } else {
+            data[i] = list.data[i];
+        }
+    }
 }
 
 template <class T>
@@ -211,6 +221,12 @@ void XArrayList<T>::removeInternalData()
      * Finally, the dynamic array itself is deallocated from memory.
      */
     // TODO
+    if (deleteUserData) {
+        deleteUserData(this);
+    }
+    delete [] data;
+    data = new T[capacity];
+    count = 0;
 }
 
 template <class T>
@@ -240,14 +256,18 @@ XArrayList<T> &XArrayList<T>::operator=(const XArrayList<T> &list)
     if (this == &list)
         return *this; 
 
-    if(deleteUserData != 0)
-        deleteUserData(this);
-
+    if(deleteUserData != 0){
+        if constexpr (std::is_pointer<T>::value){
+            deleteUserData(this);
+        }
+    }
     if(data)
         delete[] data;
 
     count = list.count;
     capacity = list.capacity;
+    itemEqual = list.itemEqual;
+    deleteUserData = list.deleteUserData;
     data = new T[capacity];
 
     for (int i = 0; i < count; i++){
@@ -265,8 +285,11 @@ template <class T>
 XArrayList<T>::~XArrayList()
 {
     // TODO
-    if(deleteUserData != 0)
-        deleteUserData(this);
+    if(deleteUserData != 0){
+        if constexpr (std::is_pointer<T>::value){
+            deleteUserData(this);
+        }
+    }
     if(data) delete[] data;
 }
 
@@ -282,6 +305,8 @@ template <class T>
 void XArrayList<T>::add(int index, T e)
 {
     // TODO
+    if(index < 0 || index > count)
+        throw std::out_of_range("Index out of range");
     ensureCapacity(index);
     for(int i = count; i > index; i--)
         data[i] = data[i-1];
@@ -293,8 +318,7 @@ template <class T>
 T XArrayList<T>::removeAt(int index)
 {
     // TODO
-    if(index < 0 || index >= count)
-        throw std::out_of_range("Index out of range");
+    checkIndex(index);
     T item = data[index];
     for(int i = index; i < count-1; i++)
         data[i] = data[i+1];
@@ -306,19 +330,20 @@ template <class T>
 bool XArrayList<T>::removeItem(T item, void (*removeItemData)(T))
 {
     // TODO
-    for (int i = 0; i < count; i++){
-        if (itemEqual ? itemEqual(data[i], item) : data[i] == item){
-            if (removeItemData){
-                removeItemData(data[i]);
-            }
-            for (int j = i; j < count - 1; j++){
-                data[j] = data[j + 1];
-            }
-            count--;
-            return true;
-        }
+    int index = indexOf(item); 
+    if(index == -1) {
+        return false;
     }
-    return false;
+    if(removeItemData) {
+        removeItemData(data[index]);
+    }else if constexpr (std::is_pointer<T>::value){
+        delete data[index];
+    }
+    for(int i = index; i < count-1; i++) {
+        data[i] = data[i+1];
+    }
+    count--;
+    return true;
 }
 
 template <class T>
@@ -340,7 +365,11 @@ void XArrayList<T>::clear()
 {
     // TODO
     if(deleteUserData != 0)
-        deleteUserData(this);
+        if constexpr (std::is_pointer<T>::value){
+            deleteUserData(this);
+        }
+    delete [] data;
+    data = new T[capacity];
     count = 0;
 }
 
@@ -408,7 +437,7 @@ void XArrayList<T>::checkIndex(int index)
      * Ensures safe access to the list's elements by preventing invalid index operations.
      */
     // TODO
-    if (index < 0 || index > count) {
+    if (index < 0 || index >= count) {
         throw std::out_of_range("Index out of range");
     }
 }
@@ -422,12 +451,20 @@ void XArrayList<T>::ensureCapacity(int index)
      * In case of memory allocation failure, catches std::bad_alloc.
      */
     // TODO
-    checkIndex(index);
+    if(index < 0 || index > count) {
+        throw std::out_of_range("Index out of range");
+    }
     try {
         if (index >= capacity) {
             capacity = index*2;
             T *newData = new T[capacity];
-            memcpy(newData, data, count * sizeof(T));
+            for (int i = 0; i < count; i++){
+                if constexpr (std::is_pointer<T>::value) {
+                    newData[i] = new std::remove_pointer_t<T>(*(data[i]));
+                } else {
+                    newData[i] = data[i];
+                }
+            }
             delete[] data;
             data = newData;
         }
